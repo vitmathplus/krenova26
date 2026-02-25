@@ -1160,8 +1160,8 @@
               
               if (db) {
                   try {
-                      // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
-                      const bankDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks', newBank.id);
+                      // PATH FIREBASE SUDAH AMAN
+                      const bankDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'banks_data', newBank.id);
                       await setDoc(bankDocRef, newBank);
                   } catch (error) {
                       console.error("Gagal simpan bank soal ke server", error);
@@ -1174,7 +1174,7 @@
               if (deleteTarget) { 
                   setQuestionBanks(prev => prev.filter(b => b.id !== deleteTarget.id)); 
                   if (db) {
-                      try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks', deleteTarget.id)); } catch(e) {}
+                      try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'banks_data', deleteTarget.id)); } catch(e) {}
                   }
                   setDeleteTarget(null); 
                   notify("Bank soal dihapus."); 
@@ -1376,9 +1376,9 @@
           const confirmDeleteResult = async () => {
               if (deleteResultTarget) {
                   try {
-                      // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
+                      // PATH FIREBASE SUDAH AMAN
                       if (deleteResultTarget.docId) {
-                          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results', deleteResultTarget.docId));
+                          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'results_data', deleteResultTarget.docId));
                       }
                       const newResults = results.filter(r => !(r.studentName === deleteResultTarget.studentName && r.scheduleId === deleteResultTarget.scheduleId));
                       setResults(newResults);
@@ -1395,8 +1395,8 @@
               try {
                   const deletePromises = filteredResults.map(r => {
                       if (r.docId) {
-                          // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
-                          return deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results', r.docId));
+                          // PATH FIREBASE SUDAH AMAN
+                          return deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'results_data', r.docId));
                       }
                       return Promise.resolve();
                   });
@@ -1459,6 +1459,7 @@
                        </td>
                    </tr>) })}</tbody></table></div></div>
                
+               {/* MODAL ANALISIS SOAL */}
                {analyzingResult && (<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in"><div className="bg-white rounded-2xl w-[95%] md:w-full max-w-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90vh]"><div className="p-5 border-b flex justify-between items-center bg-gray-50"><div><h3 className="font-bold text-lg text-gray-800">Analisis Jawaban</h3><p className="text-xs text-gray-500">Siswa: <b>{analyzingResult.studentName}</b> | Nilai: <b>{analyzingResult.score}</b></p></div><button onClick={() => setAnalyzingResult(null)}><X size={20} className="text-gray-400 hover:text-red-500"/></button></div><div className="p-0 overflow-y-auto flex-1">{!analyzingResult.analysis ? (<div className="p-8 text-center text-red-400">Data paket soal tidak ditemukan.</div>) : (<table className="w-full text-sm text-left"><thead className="bg-gray-100 text-gray-600 sticky top-0"><tr><th className="p-3 font-bold text-center border-b">No</th><th className="p-3 font-bold border-b w-1/2">Cuplikan Soal</th><th className="p-3 font-bold text-center border-b">Kunci</th><th className="p-3 font-bold text-center border-b">Siswa</th><th className="p-3 font-bold text-center border-b">Hasil</th></tr></thead><tbody className="divide-y">{analyzingResult.analysis.map((item, idx) => (<tr key={idx} className={`hover:bg-gray-50 ${item.isCorrect ? 'bg-emerald-50/20' : 'bg-red-50/20'}`}><td className="p-3 text-center font-bold text-gray-500">{item.no}</td><td className="p-3 text-gray-600 text-xs">{item.questionSnippet}</td><td className="p-3 text-center font-bold text-emerald-600">{item.keyLabel}</td><td className={`p-3 text-center font-bold ${item.isCorrect ? 'text-emerald-600' : 'text-red-500'}`}>{item.userAnsLabel}</td><td className="p-3 text-center">{item.isCorrect ? <CheckCircle size={16} className="text-emerald-500 mx-auto"/> : <XCircle size={16} className="text-red-500 mx-auto"/>}</td></tr>))}</tbody></table>)}</div>
                
                {analyzingResult.cheatLogs && analyzingResult.cheatLogs.length > 0 && (
@@ -1472,6 +1473,7 @@
 
                <div className="p-4 border-t bg-gray-50 flex justify-end"><button onClick={() => setAnalyzingResult(null)} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg">Tutup</button></div></div></div>)}
                
+               {/* MODAL DATA SISWA BELUM UJIAN DENGAN TOMBOL UNDUH */}
                {showPendingModal && (
                   <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
                       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border overflow-hidden flex flex-col max-h-[85vh]">
@@ -1526,6 +1528,8 @@
                                   </div>
                               )}
                           </div>
+                          
+                          {/* BAGIAN BAWAH MODAL (TOMBOL UNDUH DITAMBAHKAN DI SINI) */}
                           <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
                               <button onClick={() => setShowPendingModal(false)} className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition">
                                   Tutup
@@ -1855,14 +1859,14 @@
                               if (data.profile) setSchoolProfile(data.profile);
                           }
 
-                          // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
-                          const bankSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks'));
+                          // PATH FIREBASE AMAN 
+                          const bankSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'banks_data'));
                           const banks = [];
                           bankSnap.forEach(d => banks.push(d.data()));
                           if (banks.length > 0) setQuestionBanks(banks);
 
-                          // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
-                          const resultSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results'));
+                          // PATH FIREBASE AMAN 
+                          const resultSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'results_data'));
                           const resultsData = [];
                           resultSnap.forEach(d => resultsData.push({ ...d.data(), docId: d.id }));
                           if (resultsData.length > 0) setExamResults(resultsData);
@@ -1890,8 +1894,8 @@
                       }
                   });
 
-                  // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
-                  const unsubResults = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results'), (snapshot) => {
+                  // PATH FIREBASE AMAN 
+                  const unsubResults = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'results_data'), (snapshot) => {
                       const resultsData = [];
                       snapshot.forEach((doc) => resultsData.push({ ...doc.data(), docId: doc.id }));
                       setExamResults(resultsData);
@@ -1899,8 +1903,8 @@
 
                   const fetchBanks = async () => {
                       try {
-                          // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
-                          const bankSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks'));
+                          // PATH FIREBASE AMAN 
+                          const bankSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'banks_data'));
                           const banks = [];
                           bankSnap.forEach(d => banks.push(d.data()));
                           if (banks.length > 0) setQuestionBanks(banks);
@@ -2009,7 +2013,7 @@
                           setExamResults(prev => [ ...prev, newResult ]); 
                           try {
                               // PATH FIREBASE AMAN
-                              const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results');
+                              const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'results_data');
                               addDoc(resultsCollection, newResult);
                           } catch(e) {}
                       }
@@ -2080,7 +2084,7 @@
               } else { 
                   try {
                       // PATH FIREBASE AMAN
-                      const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results');
+                      const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'results_data');
                       const docRef = await addDoc(resultsCollection, newResult);
                       setExamResults(prev => prev.map(r => r === newResult ? { ...r, docId: docRef.id } : r));
                   } catch (e) {
@@ -2100,7 +2104,7 @@
                   
                   try {
                       // PATH FIREBASE AMAN
-                      const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results');
+                      const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'results_data');
                       const uploadPromises = myPending.map(r => addDoc(resultsCollection, r));
                       await Promise.all(uploadPromises);
                       notify("Sukses upload semua hasil tertunda!", "success");
@@ -2138,7 +2142,7 @@
                       
                       if (db) {
                           // PATH FIREBASE AMAN
-                          setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks', newBank.id), newBank).catch(e=>console.error(e));
+                          setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'master', 'banks_data', newBank.id), newBank).catch(e=>console.error(e));
                       }
                       resolve(true); 
                   }, 1500); 
