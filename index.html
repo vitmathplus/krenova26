@@ -347,8 +347,7 @@
         };
 
         const INITIAL_USERS = [
-          { username: "admin", password: "123", role: "admin", name: "Administrator Utama", nis: "-", class: "-" },
-          { username: "101", password: "123", role: "student", name: "Andi Saputra", nis: "101", class: "X-A" }
+          { username: "admin", password: "123", role: "admin", name: "Administrator Utama", nis: "-", class: "-" }
         ];
 
         const INITIAL_QUESTIONS = [
@@ -1161,7 +1160,8 @@
               
               if (db) {
                   try {
-                      const bankDocRef = doc(db, 'siujang_banks', newBank.id);
+                      // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
+                      const bankDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks', newBank.id);
                       await setDoc(bankDocRef, newBank);
                   } catch (error) {
                       console.error("Gagal simpan bank soal ke server", error);
@@ -1170,7 +1170,16 @@
               notify("Bank soal berhasil disimpan!"); 
           };
 
-          const handleDelete = () => { if (deleteTarget) { setQuestionBanks(prev => prev.filter(b => b.id !== deleteTarget.id)); setDeleteTarget(null); notify("Bank soal dihapus."); } };
+          const handleDelete = async () => { 
+              if (deleteTarget) { 
+                  setQuestionBanks(prev => prev.filter(b => b.id !== deleteTarget.id)); 
+                  if (db) {
+                      try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks', deleteTarget.id)); } catch(e) {}
+                  }
+                  setDeleteTarget(null); 
+                  notify("Bank soal dihapus."); 
+              } 
+          };
           
           if (isDetailView && activeDetailBank) { 
               return (
@@ -1343,7 +1352,6 @@
             const worksheet = window.XLSX.utils.json_to_sheet(excelData); const workbook = window.XLSX.utils.book_new(); window.XLSX.utils.book_append_sheet(workbook, worksheet, "Hasil Ujian"); const fileName = `REKAP_HASIL_${filterClass.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`; window.XLSX.writeFile(workbook, fileName);
           };
 
-          // FUNGSI BARU: UNDUH EXCEL SISWA BELUM UJIAN
           const handleDownloadPendingExcel = () => {
               if (!window.XLSX) return notify("Engine Excel sedang dimuat, tunggu sebentar...", "error");
               if (pendingStudents.length === 0) return notify("Tidak ada data siswa untuk diunduh!", "error");
@@ -1368,8 +1376,9 @@
           const confirmDeleteResult = async () => {
               if (deleteResultTarget) {
                   try {
+                      // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
                       if (deleteResultTarget.docId) {
-                          await deleteDoc(doc(db, 'siujang_results', deleteResultTarget.docId));
+                          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results', deleteResultTarget.docId));
                       }
                       const newResults = results.filter(r => !(r.studentName === deleteResultTarget.studentName && r.scheduleId === deleteResultTarget.scheduleId));
                       setResults(newResults);
@@ -1386,7 +1395,8 @@
               try {
                   const deletePromises = filteredResults.map(r => {
                       if (r.docId) {
-                          return deleteDoc(doc(db, 'siujang_results', r.docId));
+                          // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
+                          return deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results', r.docId));
                       }
                       return Promise.resolve();
                   });
@@ -1462,7 +1472,6 @@
 
                <div className="p-4 border-t bg-gray-50 flex justify-end"><button onClick={() => setAnalyzingResult(null)} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg">Tutup</button></div></div></div>)}
                
-               {/* MODAL DATA SISWA BELUM UJIAN DENGAN TOMBOL UNDUH */}
                {showPendingModal && (
                   <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
                       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border overflow-hidden flex flex-col max-h-[85vh]">
@@ -1517,8 +1526,6 @@
                                   </div>
                               )}
                           </div>
-                          
-                          {/* BAGIAN BAWAH MODAL (TOMBOL UNDUH DITAMBAHKAN DI SINI) */}
                           <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
                               <button onClick={() => setShowPendingModal(false)} className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition">
                                   Tutup
@@ -1822,6 +1829,13 @@
           const [isSaving, setIsSaving] = useState(false);
           const isOnline = useNetworkStatus();
           const isRemoteUpdate = useRef(false);
+
+          // BACKUP OFFLINE BANK SOAL
+          useEffect(() => {
+              if (questionBanks && questionBanks.length > 0) {
+                  secureStorage.setItem('siujang_banks', questionBanks);
+              }
+          }, [questionBanks]);
           
           // MESIN SISWA
           useEffect(() => {
@@ -1841,12 +1855,14 @@
                               if (data.profile) setSchoolProfile(data.profile);
                           }
 
-                          const bankSnap = await getDocs(collection(db, 'siujang_banks'));
+                          // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
+                          const bankSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks'));
                           const banks = [];
                           bankSnap.forEach(d => banks.push(d.data()));
                           if (banks.length > 0) setQuestionBanks(banks);
 
-                          const resultSnap = await getDocs(collection(db, 'siujang_results'));
+                          // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
+                          const resultSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results'));
                           const resultsData = [];
                           resultSnap.forEach(d => resultsData.push({ ...d.data(), docId: d.id }));
                           if (resultsData.length > 0) setExamResults(resultsData);
@@ -1874,7 +1890,8 @@
                       }
                   });
 
-                  const unsubResults = onSnapshot(collection(db, 'siujang_results'), (snapshot) => {
+                  // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
+                  const unsubResults = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results'), (snapshot) => {
                       const resultsData = [];
                       snapshot.forEach((doc) => resultsData.push({ ...doc.data(), docId: doc.id }));
                       setExamResults(resultsData);
@@ -1882,7 +1899,8 @@
 
                   const fetchBanks = async () => {
                       try {
-                          const bankSnap = await getDocs(collection(db, 'siujang_banks'));
+                          // PATH FIREBASE AMAN (DI DALAM ARTIFACTS)
+                          const bankSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks'));
                           const banks = [];
                           bankSnap.forEach(d => banks.push(d.data()));
                           if (banks.length > 0) setQuestionBanks(banks);
@@ -1990,7 +2008,8 @@
                       } else { 
                           setExamResults(prev => [ ...prev, newResult ]); 
                           try {
-                              const resultsCollection = collection(db, 'siujang_results');
+                              // PATH FIREBASE AMAN
+                              const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results');
                               addDoc(resultsCollection, newResult);
                           } catch(e) {}
                       }
@@ -2037,7 +2056,6 @@
           };
 
           const handleExamSubmit = async (result) => { 
-              // CEGAT NILAI GANDA DI SINI
               const isDuplicate = examResults.some(r => r.studentName === currentUser.name && r.scheduleId === activeScheduleId) ||
                                   pendingResults.some(r => r.studentName === currentUser.name && r.scheduleId === activeScheduleId);
               if (isDuplicate) {
@@ -2061,8 +2079,8 @@
                   notify("Anda sedang OFFLINE. Jawaban masuk antrian.", "warning"); 
               } else { 
                   try {
-                      // Simpan ke koleksi baru yang terpisah
-                      const resultsCollection = collection(db, 'siujang_results');
+                      // PATH FIREBASE AMAN
+                      const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results');
                       const docRef = await addDoc(resultsCollection, newResult);
                       setExamResults(prev => prev.map(r => r === newResult ? { ...r, docId: docRef.id } : r));
                   } catch (e) {
@@ -2081,7 +2099,8 @@
                   setPendingResults(prev => prev.filter(r => r.studentName !== currentUser.name)); 
                   
                   try {
-                      const resultsCollection = collection(db, 'siujang_results');
+                      // PATH FIREBASE AMAN
+                      const resultsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'results');
                       const uploadPromises = myPending.map(r => addDoc(resultsCollection, r));
                       await Promise.all(uploadPromises);
                       notify("Sukses upload semua hasil tertunda!", "success");
@@ -2118,7 +2137,8 @@
                       setSchedules(prev => [...prev, newSchedule]); 
                       
                       if (db) {
-                          setDoc(doc(db, 'siujang_banks', newBank.id), newBank).catch(e=>console.error(e));
+                          // PATH FIREBASE AMAN
+                          setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exam_system', 'banks', newBank.id), newBank).catch(e=>console.error(e));
                       }
                       resolve(true); 
                   }, 1500); 
@@ -2159,5 +2179,4 @@
         root.render(<App />);
     </script>
 </body>
-
 </html>
